@@ -2,6 +2,7 @@
 # enrollments/models.py
 # ----------------------------------------------
 from django.db import models
+from canines.models import Canino  # 👈 importa el modelo Canino
 
 # ----------------------------------------------
 # Enrollment / Matricula
@@ -39,6 +40,10 @@ class Matricula(models.Model):
     ]
 
     id_matricula = models.BigAutoField(primary_key=True)
+
+    # 🔗 Relación con Canino
+    id_canino = models.ForeignKey(Canino, on_delete=models.CASCADE, related_name='matriculas', null=True, blank=True)
+
     plan = models.CharField(max_length=20, choices=PLAN_CHOICES)
     transporte = models.CharField(max_length=20, choices=TRANSPORTE_CHOICES)
     fecha_inicio = models.DateField()
