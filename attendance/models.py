@@ -19,11 +19,11 @@ class Asistencia(models.Model):
     id_asistencia = models.BigAutoField(primary_key=True)
     id_canino = models.ForeignKey(Canino, on_delete=models.CASCADE, related_name='asistencias')
     fecha = models.DateField()
-    llegada = models.TimeField(null=True, blank=True)
-    salida = models.TimeField(null=True, blank=True)
-    motivo_salida = models.TextField(blank=True)
-    quien_retiro = models.CharField(max_length=200, blank=True)
-    tipo_llegada = models.CharField(max_length=20, choices=TIPO_LLEGADA_CHOICES)
+    llegada = models.TimeField("Hora de llegada",null=True, blank=True)
+    salida = models.TimeField("Hora de salida", null=True, blank=True)
+    motivo_salida = models.TextField("Motivo de salida", blank=True)
+    quien_retiro = models.CharField("Quién retiró", max_length=200, blank=True)
+    tipo_llegada = models.CharField("Tipo de llegada", max_length=20, choices=TIPO_LLEGADA_CHOICES)
     registrado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='asistencias_registradas')
 
     def __str__(self):
@@ -63,5 +63,9 @@ class CondicionFisica(models.Model):
     observaciones = models.TextField(blank=True)
     registrado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='condiciones_registradas')
 
+    class Meta:
+        verbose_name = 'Condición física'
+        verbose_name_plural = 'Condición física'
+
     def __str__(self):
-        return f"Condición {self.id_canino.nombre} on {self.fecha}"
+        return f"Condición {self.id_canino.nombre} en {self.fecha}"
