@@ -3,7 +3,7 @@
 # ----------------------------------------------
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from users.views import UsuarioViewSet
+from users.views.login_views import UsuarioViewSet
 
 # Create router
 router = DefaultRouter()
