@@ -18,8 +18,12 @@ def check_email(request):
         data = json.loads(request.body)
         print("📦 Datos recibidos en check_email:", data)
 
-        email = data.get("email", "").strip().lower()
+        email = data.get("email") or data.get("correo")
+        email = (email or "").strip().lower()
+
         exists = Usuario.objects.filter(email=email).exists()
+        print(f"📬 Verificando correo: {email} -> Existe: {exists}")
+
         return JsonResponse({"exists": exists})
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
