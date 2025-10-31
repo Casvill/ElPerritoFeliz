@@ -39,8 +39,10 @@ def check_documento(request):
         data = json.loads(request.body)
         print("📦 Datos recibidos en check_documento:", data)
 
-        documento = data.get("documento")
+        documento = data.get("documento") or data.get("nroDoc")
         exists = Usuario.objects.filter(documento=documento).exists()
+        print(f"📬 Verificando documento: {documento} -> Existe: {exists}")
+
         return JsonResponse({"exists": exists})
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)

@@ -10,6 +10,7 @@ db.sqlite3
 
 # Virtual Env
 venv/
+deploy/
 
 # VSCode
 .vscode/
