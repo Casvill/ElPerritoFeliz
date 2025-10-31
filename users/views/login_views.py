@@ -9,10 +9,15 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import login
-from ..serializers import LoginSerializer
+from users.serializers import LoginSerializer
 import requests
 import os
 from rest_framework.decorators import api_view
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from axes.handlers.proxy import AxesProxyHandler
 
 # ----------------------------------------------
 # Usuario ViewSet (CRUD básico)
@@ -26,13 +31,38 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
 #----------------------------------------------------------
 class LoginView(APIView):
-    def post(self, request):
-        print(request.data) 
-        serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data["user"]
-            login(request, user)
-            return Response({
+    """
+    Vista de inicio de sesión segura con protección contra fuerza bruta usando django-axes.
+    Utiliza un serializer para validar los datos y bloquea temporalmente tras varios intentos fallidos.
+    """
+
+    def post(self, request, *args, **kwargs):
+        # 1️⃣ Verificar si el usuario o IP ya está bloqueado
+        if AxesProxyHandler.is_locked(request):
+            return Response(
+                {
+                    "error": (
+                        "Tu cuenta o dirección IP ha sido bloqueada temporalmente "
+                        "por múltiples intentos fallidos. Intenta más tarde o contacta al administrador."
+                    )
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # 2️⃣ Validar datos de entrada con el serializer
+        serializer = LoginSerializer(data=request.data, context={"request": request})
+
+        if not serializer.is_valid():
+            # Axes registra automáticamente los intentos fallidos
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # 3️⃣ Autenticar y crear sesión
+        user = serializer.validated_data["user"]
+        login(request, user)
+
+        # 4️⃣ Responder con la información del usuario
+        return Response(
+            {
                 "message": "Inicio de sesión exitoso",
                 "usuario": {
                     "id": user.id_usuario,
@@ -40,9 +70,10 @@ class LoginView(APIView):
                     "nombres": user.nombres,
                     "apellidos": user.apellidos,
                     "tipo_usuario": user.tipo_usuario,
-                }
-            }, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
     
 @api_view(["POST"])
 def verify_recaptcha(request):

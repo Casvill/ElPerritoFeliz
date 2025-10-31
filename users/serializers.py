@@ -26,7 +26,7 @@ class LoginSerializer(serializers.Serializer):
         password = data.get("password")
 
         if documento and password:
-            user = authenticate(documento=documento, password=password)
+            user = authenticate(request=self.context.get('request'), documento=documento, password=password)
             if not user:
                 raise serializers.ValidationError("Credenciales inválidas")
         else:
