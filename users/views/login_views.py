@@ -19,6 +19,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from axes.handlers.proxy import AxesProxyHandler
 
+from django_rest_passwordreset.views import ResetPasswordValidateToken
+from django_rest_passwordreset.models import ResetPasswordToken
+
 # ----------------------------------------------
 # Usuario ViewSet (CRUD básico)
 # ----------------------------------------------
@@ -93,3 +96,37 @@ def verify_recaptcha(request):
         return Response({"success": True}, status=200)
     else:
         return Response({"success": False, "error": "Falló la verificación del reCAPTCHA"}, status=400)
+    
+class CustomValidateTokenView(ResetPasswordValidateToken):
+    """
+    Valida el token del correo, devolviendo mensajes en español.
+    """
+
+    def post(self, request, *args, **kwargs):
+        try:
+            response = super().post(request, *args, **kwargs)
+        except Exception:
+            return Response(
+                {"message": "Hubo un error procesando la validación del token."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Si el backend original devolvió código 404 (token no válido)
+        if response.status_code == 404:
+            return Response(
+                {"message": "El código ingresado no es válido o ya expiró. Intenta solicitar uno nuevo."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Si la validación fue exitosa
+        if response.status_code == 200:
+            return Response(
+                {"message": "El código fue verificado correctamente. Ahora puedes restablecer tu contraseña."},
+                status=status.HTTP_200_OK
+            )
+
+        # Cualquier otro caso inesperado
+        return Response(
+            {"message": "No se pudo validar el código. Intenta nuevamente."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
