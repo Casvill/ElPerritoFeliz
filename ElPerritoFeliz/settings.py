@@ -130,7 +130,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 #CONFIGURACIÓN NÚMERO DE INTENTOS DE LOGIN Y TIEMPO DE BLOQUEO
-AXES_FAILURE_LIMIT = 3
+AXES_FAILURE_LIMIT = 2
 AXES_COOLOFF_TIME = 1  # en horas, o timedelta
 AXES_LOCKOUT_PARAMETERS = ["username", "ip_address"]  # Sustituye las viejas opciones combinadas
 AXES_RESET_ON_SUCCESS = True  # Reinicia el contador tras login exitoso
