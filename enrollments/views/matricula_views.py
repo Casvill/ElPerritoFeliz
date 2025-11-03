@@ -1,12 +1,12 @@
+# enrollments/views/matricula_views.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from ..models import Canino, Matricula
-from users.models import Usuario
+from datetime import date, timedelta
+from django.conf import settings
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from datetime import date, datetime, timedelta
-from django.conf import settings
 import os
 
 
@@ -16,10 +16,10 @@ class RegistrarMatriculaView(APIView):
 
     def post(self, request):
         data = request.data
-        user = request.user  # usuario autenticado por JWT
+        user = request.user
 
         try:
-            # ✅ 1️⃣ Crear o registrar el canino
+            # 1️⃣ Crear el canino asociado al usuario
             canino = Canino.objects.create(
                 id_dueno=user,
                 nombre=data['nombre'],
@@ -29,46 +29,45 @@ class RegistrarMatriculaView(APIView):
                 carnet_vacunacion_url=data.get('vacunas_url', ''),
             )
 
-            # ✅ 2️⃣ Calcular fechas de matrícula
+            # 2️⃣ Calcular fechas según el plan
             fecha_inicio = date.today()
             plan = data['plan']
+            duraciones = {
+                'mensual': 30,
+                'bimestre': 60,
+                'trimestre': 90,
+                'medio_año': 180,
+                'año': 365,
+            }
+            dias = duraciones.get(plan, 30)
+            fecha_fin = fecha_inicio + timedelta(days=dias)
 
-            if plan == 'mensual':
-                fecha_fin = fecha_inicio + timedelta(days=30)
-            elif plan == 'bimestre':
-                fecha_fin = fecha_inicio + timedelta(days=60)
-            elif plan == 'trimestre':
-                fecha_fin = fecha_inicio + timedelta(days=90)
-            elif plan == 'medio_año':
-                fecha_fin = fecha_inicio + timedelta(days=180)
-            else:
-                fecha_fin = fecha_inicio + timedelta(days=365)
-
-            # ✅ 3️⃣ Obtener precio desde .env o usar valores por defecto
+            # 3️⃣ Determinar precio desde variables de entorno o valores por defecto
             plan_precios = {
-                'mensual': float(os.getenv('PRECIO_PLAN_1M', 100000)),
-                'bimestre': float(os.getenv('PRECIO_PLAN_2B', 180000)),
-                'trimestre': float(os.getenv('PRECIO_PLAN_3T', 250000)),
-                'medio_año': float(os.getenv('PRECIO_PLAN_6M', 450000)),
-                'año': float(os.getenv('PRECIO_PLAN_1Y', 800000)),
+                'mensual': int(os.getenv('PRECIO_PLAN_1M', 100000)),
+                'bimestre': int(os.getenv('PRECIO_PLAN_2B', 180000)),
+                'trimestre': int(os.getenv('PRECIO_PLAN_3T', 250000)),
+                'medio_año': int(os.getenv('PRECIO_PLAN_6M', 450000)),
+                'año': int(os.getenv('PRECIO_PLAN_1Y', 800000)),
             }
             precio = plan_precios.get(plan, 100000)
 
-            # ✅ 4️⃣ Crear la matrícula
+            # 4️⃣ Crear la matrícula con precio correcto
             matricula = Matricula.objects.create(
                 id_canino=canino,
                 plan=plan,
                 transporte=data['transporte'],
                 fecha_inicio=fecha_inicio,
                 fecha_fin=fecha_fin,
-                estado=Matricula.EST_ACTIVA,
+                estado='Activa',
                 precio=precio,
             )
 
             return Response({
-                'mensaje': '✅ Matrícula registrada correctamente',
+                'mensaje': 'Matrícula registrada correctamente',
                 'canino_id': canino.id_canino,
                 'matricula_id': matricula.id_matricula,
+                'precio': precio,
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
@@ -76,6 +75,7 @@ class RegistrarMatriculaView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def _calcular_edad_meses(self, nacimiento):
+        from datetime import datetime
         nacimiento = datetime.strptime(nacimiento, "%Y-%m-%d").date()
         today = date.today()
         return (today.year - nacimiento.year) * 12 + today.month - nacimiento.month
