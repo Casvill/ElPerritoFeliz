@@ -2,7 +2,8 @@
 # enrollments/models.py
 # ----------------------------------------------
 from django.db import models
-from canines.models import Canino  # 👈 importa el modelo Canino
+from canines.models import Canino 
+from datetime import date, timedelta
 
 # ----------------------------------------------
 # Enrollment / Matricula
@@ -51,6 +52,33 @@ class Matricula(models.Model):
     estado = models.CharField(max_length=30, choices=ESTADO_CHOICES, default=EST_ACTIVA)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        # 🔹 Calcular fecha_fin según el plan
+        if not self.fecha_fin:
+            if self.plan == self.PLAN_1M:
+                self.fecha_fin = date.today() + timedelta(days=30)
+            elif self.plan == self.PLAN_2B:
+                self.fecha_fin = date.today() + timedelta(days=60)
+            elif self.plan == self.PLAN_3T:
+                self.fecha_fin = date.today() + timedelta(days=90)
+            elif self.plan == self.PLAN_6M:
+                self.fecha_fin = date.today() + timedelta(days=180)
+            elif self.plan == self.PLAN_1Y:
+                self.fecha_fin = date.today() + timedelta(days=365)
+
+        # 🔹 Asignar precio según .env
+        import os
+        precios = {
+            self.PLAN_1M: os.getenv('PRECIO_PLAN_1M', 100000),
+            self.PLAN_2B: os.getenv('PRECIO_PLAN_2B', 180000),
+            self.PLAN_3T: os.getenv('PRECIO_PLAN_3T', 250000),
+            self.PLAN_6M: os.getenv('PRECIO_PLAN_6M', 450000),
+            self.PLAN_1Y: os.getenv('PRECIO_PLAN_1Y', 800000),
+        }
+        self.precio = precios.get(self.plan, 0)
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Matricula {self.id_matricula} - {self.id_canino.nombre} ({self.plan})"

@@ -21,15 +21,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
     path('api/', include('users.urls')),
-    path(
-        'api/password_reset/validate_token/',
-        CustomValidateTokenView.as_view(),
-        name='password_reset_validate_token',
-    ),
-    path(
-        'api/password_reset/',
-        include('django_rest_passwordreset.urls', namespace='password_reset'),
-    ),
+    path('api/password_reset/validate_token/',CustomValidateTokenView.as_view(),name='password_reset_validate_token',),
+    path('api/password_reset/',include('django_rest_passwordreset.urls', namespace='password_reset'),),
+    path('api/', include('enrollments.urls')),
 ]
 
 # ----------------------------------------------

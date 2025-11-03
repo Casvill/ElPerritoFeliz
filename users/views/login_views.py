@@ -21,6 +21,8 @@ from axes.handlers.proxy import AxesProxyHandler
 
 from django_rest_passwordreset.views import ResetPasswordValidateToken
 from django_rest_passwordreset.models import ResetPasswordToken
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 
 # ----------------------------------------------
 # Usuario ViewSet (CRUD básico)
@@ -79,12 +81,16 @@ class LoginView(APIView):
         )
     
 @api_view(["POST"])
+@permission_classes([AllowAny])  # 👈 ahora permite acceso sin autenticación
 def verify_recaptcha(request):
     token = request.data.get("token") or request.data.get("recaptchaToken")
     secret_key = os.getenv("RECAPTCHA_SECRET_KEY")
 
     if not token:
-        return Response({"success": False, "error": "Token no proporcionado"}, status=400)
+        return Response(
+            {"success": False, "error": "Token no proporcionado"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     url = "https://www.google.com/recaptcha/api/siteverify"
     data = {"secret": secret_key, "response": token}
@@ -93,9 +99,12 @@ def verify_recaptcha(request):
     result = r.json()
 
     if result.get("success"):
-        return Response({"success": True}, status=200)
+        return Response({"success": True}, status=status.HTTP_200_OK)
     else:
-        return Response({"success": False, "error": "Falló la verificación del reCAPTCHA"}, status=400)
+        return Response(
+            {"success": False, "error": "Falló la verificación del reCAPTCHA"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     
 class CustomValidateTokenView(ResetPasswordValidateToken):
     """
