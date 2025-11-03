@@ -6,7 +6,8 @@ from rest_framework.routers import DefaultRouter
 from .views.login_views import LoginView, verify_recaptcha
 from .views.register_views import check_documento, check_email, register_user
 from .views.internaluser_views import UsuarioInternoViewSet
-from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
+from .views.token_views import CustomTokenObtainPairView
+from rest_framework_simplejwt.views import TokenRefreshView
 
 # Router para viewsets (usuarios internos)
 router = DefaultRouter()
@@ -24,6 +25,6 @@ urlpatterns = [
     path('', include(router.urls)),
 
     # 🔹 JWT Token endpoints
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
