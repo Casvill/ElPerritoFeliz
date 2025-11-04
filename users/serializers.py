@@ -83,11 +83,12 @@ class LoginSerializer(serializers.Serializer):
 # Serializer para perfil del cliente
 # ----------------------------------------------
 class UsuarioPerfilSerializer(serializers.ModelSerializer):
+    petsCount = serializers.SerializerMethodField()
+
     class Meta:
         model = Usuario
         fields = [
             "id_usuario",
-            "tipo_usuario",
             "tipo_documento",
             "documento",
             "nombres",
@@ -97,5 +98,11 @@ class UsuarioPerfilSerializer(serializers.ModelSerializer):
             "email",
             "direccion",
             "foto",
+            "fecha_registro",
+            "petsCount",  # 🔹 Nuevo campo con número de caninos
         ]
         read_only_fields = ["documento", "tipo_documento"]
+
+    def get_petsCount(self, obj):
+        return obj.caninos.count()
+
