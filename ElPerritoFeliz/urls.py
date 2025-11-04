@@ -6,6 +6,7 @@ from django.urls import path, include
 from rest_framework import routers
 from .views import home
 from users.views.login_views import UsuarioViewSet, CustomValidateTokenView
+from dashboard.views.client_dashboard_views import ClienteDashboardView
 
 # ----------------------------------------------
 # Create DRF router and register endpoints
@@ -24,6 +25,8 @@ urlpatterns = [
     path('api/password_reset/validate_token/',CustomValidateTokenView.as_view(),name='password_reset_validate_token',),
     path('api/password_reset/',include('django_rest_passwordreset.urls', namespace='password_reset'),),
     path('api/', include('enrollments.urls')),
+    path("api/dashboard/cliente/", ClienteDashboardView.as_view(), name="dashboard_cliente"),
+
 ]
 
 # ----------------------------------------------
