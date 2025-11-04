@@ -77,3 +77,25 @@ class LoginSerializer(serializers.Serializer):
 
         data["user"] = user
         return data
+
+
+# ----------------------------------------------
+# Serializer para perfil del cliente
+# ----------------------------------------------
+class UsuarioPerfilSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Usuario
+        fields = [
+            "id_usuario",
+            "tipo_usuario",
+            "tipo_documento",
+            "documento",
+            "nombres",
+            "apellidos",
+            "fecha_nacimiento",
+            "telefono",
+            "email",
+            "direccion",
+            "foto",
+        ]
+        read_only_fields = ["documento", "tipo_documento"]

@@ -8,6 +8,8 @@ from .views.register_views import check_documento, check_email, register_user
 from .views.internaluser_views import UsuarioInternoViewSet
 from .views.token_views import CustomTokenObtainPairView
 from rest_framework_simplejwt.views import TokenRefreshView
+from .views.profile_views import ClientePerfilView
+
 
 # Router para viewsets (usuarios internos)
 router = DefaultRouter()
@@ -20,6 +22,8 @@ urlpatterns = [
     path('check-email/', check_email, name='check_email'),
     path('check-documento/', check_documento, name='check_documento'),
     path('register/', register_user, name='register_user'),
+    path('perfil/', ClientePerfilView.as_view(), name='perfil_cliente'),
+
 
     # --- Nuevas rutas automáticas ---
     path('', include(router.urls)),
