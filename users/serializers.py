@@ -90,6 +90,7 @@ class UsuarioPerfilSerializer(serializers.ModelSerializer):
         fields = [
             "id_usuario",
             "tipo_documento",
+            "tipo_usuario",
             "documento",
             "nombres",
             "apellidos",
