@@ -3,22 +3,18 @@
 #----------------------------------------------
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from ..models import Usuario
 import json
-from ..models import Usuario   # ✅ tu modelo personalizado
-#----------------------------------------------
 
 #----------------------------------------------
-# Verificar si el correo ya está registrado
+# Verificar si el correo ya está registrado (GET)
 #----------------------------------------------
 @csrf_exempt
 def check_email(request):
-    if request.method != "POST":
+    if request.method != "GET":
         return JsonResponse({"error": "Método no permitido"}, status=405)
     try:
-        data = json.loads(request.body)
-        print("📦 Datos recibidos en check_email:", data)
-
-        email = data.get("email") or data.get("correo")
+        email = request.GET.get("email") or request.GET.get("correo")
         email = (email or "").strip().lower()
 
         exists = Usuario.objects.filter(email=email).exists()
@@ -29,24 +25,24 @@ def check_email(request):
         return JsonResponse({"error": str(e)}, status=400)
 
 #----------------------------------------------
-# Verificar si el documento ya está registrado
+# Verificar si el documento ya está registrado (GET)
 #----------------------------------------------
 @csrf_exempt
 def check_documento(request):
-    if request.method != "POST":
+    if request.method != "GET":
         return JsonResponse({"error": "Método no permitido"}, status=405)
     try:
-        data = json.loads(request.body)
-        print("📦 Datos recibidos en check_documento:", data)
+        documento = request.GET.get("documento") or request.GET.get("nroDoc")
 
-        documento = data.get("documento")
         exists = Usuario.objects.filter(documento=documento).exists()
+        print(f"📬 Verificando documento: {documento} -> Existe: {exists}")
+
         return JsonResponse({"exists": exists})
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
 
 #----------------------------------------------
-# Registrar nuevo usuario
+# Registrar nuevo usuario (POST)
 #----------------------------------------------
 @csrf_exempt
 def register_user(request):
@@ -57,7 +53,6 @@ def register_user(request):
         data = json.loads(request.body)
         print("📦 Datos recibidos en register_user:", data)
 
-        # Extraer datos del JSON
         nombres = data.get("firstName")
         apellidos = data.get("lastName")
         tipo_doc = data.get("documentType")
@@ -67,7 +62,6 @@ def register_user(request):
         direccion = data.get("address")
         password = data.get("password")
 
-        # Validaciones básicas
         if not all([nombres, apellidos, documento, email, password]):
             return JsonResponse({"error": "Faltan campos requeridos"}, status=400)
 
@@ -77,13 +71,12 @@ def register_user(request):
         if Usuario.objects.filter(documento=documento).exists():
             return JsonResponse({"error": "Documento ya registrado"}, status=409)
 
-        # Crear usuario
         user = Usuario.objects.create_user(
             documento=documento,
             password=password,
             nombres=nombres,
             apellidos=apellidos,
-            tipo_usuario=Usuario.CLIENTE,   # 👈 por defecto, lo puedes ajustar
+            tipo_usuario=Usuario.CLIENTE,
             telefono=telefono or "",
             email=email,
             direccion=direccion or "",
@@ -105,5 +98,3 @@ def register_user(request):
         import traceback
         traceback.print_exc()
         return JsonResponse({"error": str(e)}, status=400)
-
-#----------------------------------------------

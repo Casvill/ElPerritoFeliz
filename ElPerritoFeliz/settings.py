@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from datetime import timedelta
+from rest_framework.settings import api_settings
 
 load_dotenv()  # Carga el archivo .env automáticamente
 
@@ -44,6 +46,9 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'corsheaders',
+    'axes',
+    'django_rest_passwordreset',
+    'rest_framework_simplejwt',
 
     'users',
     'clients',
@@ -62,6 +67,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'axes.middleware.AxesMiddleware',
 ]
 
 ROOT_URLCONF = 'ElPerritoFeliz.urls'
@@ -101,6 +107,23 @@ DATABASES = {
     }
 }
 
+# ----------------------------------------------
+# Configuración REST Framework
+# ----------------------------------------------
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -121,6 +144,18 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTH_USER_MODEL = 'users.Usuario'
+
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+#CONFIGURACIÓN NÚMERO DE INTENTOS DE LOGIN Y TIEMPO DE BLOQUEO
+AXES_FAILURE_LIMIT = 2
+AXES_COOLOFF_TIME = 1  # en horas, o timedelta
+AXES_LOCKOUT_PARAMETERS = ["username", "ip_address"]  # Sustituye las viejas opciones combinadas
+AXES_RESET_ON_SUCCESS = True  # Reinicia el contador tras login exitoso
+AXES_LOCKOUT_CALLABLE = None  # Usa el comportamiento por defecto
 
 
 # Internationalization
@@ -150,3 +185,20 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 CORS_ALLOW_ALL_ORIGINS = True
+
+# RECUPERACIÓN DE CONTRASEÑAS:
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=4),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "USER_ID_FIELD": "id_usuario",  
+    "USER_ID_CLAIM": "user_id",     
+}
