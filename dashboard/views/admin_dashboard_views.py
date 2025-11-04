@@ -5,8 +5,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from datetime import date, datetime, timedelta
-from django.db.models import Count, Sum, Q
+from datetime import date, timedelta
+from django.db.models import Sum
 from enrollments.models import Matricula
 from users.models import Usuario
 from canines.models import Canino
@@ -41,8 +41,7 @@ class AdminDashboardView(APIView):
             or 0
         )
 
-        # === KPI 4: Asistencia promedio ===
-        # 🔸 Por ahora se simula, luego puede venir de modelo Asistencia
+        # === KPI 4: Asistencia promedio (simulado) ===
         asistencia_pct = 85
 
         # === Distribución de transporte ===
@@ -78,19 +77,33 @@ class AdminDashboardView(APIView):
             })
 
         # === Últimas matrículas ===
-        ultimas = Matricula.objects.select_related("id_canino", "id_canino__id_dueno").order_by("-fecha_creacion")[:5]
-        ultimas_data = [
-            {
+        ultimas = Matricula.objects.select_related(
+            "id_canino", "id_canino__id_dueno"
+        ).order_by("-fecha_inicio")[:5]
+
+        ultimas_data = []
+        for m in ultimas:
+            dueno = getattr(m.id_canino, "id_dueno", None)
+            nombres = getattr(dueno, "nombres", "") if dueno else ""
+            apellidos = getattr(dueno, "apellidos", "") if dueno else ""
+            full_name = f"{nombres} {apellidos}".strip() or "Sin dueño"
+
+            edad = (
+                f"{m.id_canino.edad_meses // 12} años"
+                if getattr(m.id_canino, "edad_meses", None) is not None
+                else "0 años"
+            )
+
+            ultimas_data.append({
                 "name": m.id_canino.nombre,
-                "owner": f"{m.id_canino.id_dueno.first_name} {m.id_canino.id_dueno.last_name}",
+                "owner": full_name,
                 "plan": m.plan,
-                "edad": f"{m.id_canino.edad_meses // 12} años",
+                "edad": edad,
                 "fecha": m.fecha_inicio.strftime("%d %b, %Y"),
                 "avatar": "https://cdn-icons-png.flaticon.com/512/616/616408.png",
-            }
-            for m in ultimas
-        ]
+            })
 
+        # === Respuesta final ===
         data = {
             "kpiMatriculadosMes": matriculas_mes,
             "kpiEntrenadoresActivos": entrenadores_activos,
