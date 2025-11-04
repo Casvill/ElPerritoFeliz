@@ -1,3 +1,6 @@
+# ----------------------------------------------
+# users/views/token_views.py
+# ----------------------------------------------
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers, status
@@ -37,7 +40,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 )
             raise serializers.ValidationError({"detail": "Credenciales inválidas."})
 
-        # 3️⃣ Verificar contraseña
+        # 🚨 3️⃣ Verificar si el usuario está activo
+        if not user.is_active:
+            raise serializers.ValidationError({"detail": "Usuario inactivo. Contacte al administrador."})
+
+        # 4️⃣ Verificar contraseña
         if not user.check_password(password):
             if request:
                 handler.user_login_failed(
@@ -47,17 +54,17 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 )
             raise serializers.ValidationError({"detail": "Credenciales inválidas."})
 
-        # 4️⃣ Login exitoso ✅
+        # 5️⃣ Login exitoso ✅
         if request:
             handler.user_logged_in(sender=None, request=request, user=user)
 
-        # 5️⃣ Generar tokens JWT
+        # 6️⃣ Generar tokens JWT
         data = super().validate({
             self.username_field: documento,
             "password": password
         })
 
-        # 6️⃣ Agregar datos extra del usuario
+        # 7️⃣ Agregar datos extra del usuario
         data["user"] = {
             "id": user.id_usuario,
             "nombres": user.nombres,
