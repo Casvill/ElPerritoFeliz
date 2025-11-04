@@ -15,6 +15,7 @@ import os
 from dotenv import load_dotenv
 from datetime import timedelta
 from rest_framework.settings import api_settings
+from django.core.mail import EmailMessage
 
 load_dotenv()  # Carga el archivo .env automáticamente
 
@@ -187,13 +188,13 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_ALL_ORIGINS = True
 
 # RECUPERACIÓN DE CONTRASEÑAS:
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+# DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=4),
@@ -202,3 +203,12 @@ SIMPLE_JWT = {
     "USER_ID_FIELD": "id_usuario",  
     "USER_ID_CLAIM": "user_id",     
 }
+
+# LEE LA API KEY DESDE LAS VARIABLES DE ENTORNO
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+
+# Backend de correo usando SendGrid API
+EMAIL_BACKEND = "sendgrid_backend.SendgridBackend"
+SENDGRID_SANDBOX_MODE_IN_DEBUG = False  # True solo para pruebas
+SENDGRID_ECHO_TO_STDOUT = True  # Opcional, imprime los emails en consola
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
