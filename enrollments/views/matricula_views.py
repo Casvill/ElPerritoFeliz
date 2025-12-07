@@ -2,6 +2,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+
+from enrollments.serializers import MatriculaSerializer
 from ..models import Canino, Matricula
 from datetime import date, timedelta
 from django.conf import settings
@@ -24,8 +26,8 @@ class RegistrarMatriculaView(APIView):
                 id_dueno=user,
                 nombre=data['nombre'],
                 raza=data.get('raza', ''),
-                tamano=data.get('talla', 'Mediano'),
-                edad_meses=self._calcular_edad_meses(data['nacimiento']),
+                tamano=data.get('tamano', 'Mediano'),
+                fecha_nacimiento=data['fecha_nacimiento'],
                 carnet_vacunacion_url=data.get('vacunas_url', ''),
             )
 
@@ -79,3 +81,11 @@ class RegistrarMatriculaView(APIView):
         nacimiento = datetime.strptime(nacimiento, "%Y-%m-%d").date()
         today = date.today()
         return (today.year - nacimiento.year) * 12 + today.month - nacimiento.month
+
+    def get(self, request):
+        # Listar matriculas del usuario
+        user = request.user
+        caninos = Canino.objects.filter(id_dueno=user)
+        matriculas = Matricula.objects.filter(id_canino__in=caninos)
+        serializer = MatriculaSerializer(matriculas, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
