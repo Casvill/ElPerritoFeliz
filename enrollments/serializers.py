@@ -7,6 +7,7 @@ from .models import Matricula
 
 class MatriculaSerializer(serializers.ModelSerializer):
     # Datos del canino
+    id_canino = serializers.IntegerField(source='id_canino.id_canino', read_only=True) 
     nombre = serializers.CharField(source='id_canino.nombre', read_only=True)
     raza = serializers.CharField(source='id_canino.raza', read_only=True)
     talla = serializers.CharField(source='id_canino.tamano', read_only=True)
@@ -20,6 +21,7 @@ class MatriculaSerializer(serializers.ModelSerializer):
         model = Matricula
         fields = [
             'id_matricula',
+            'id_canino',
             'plan',
             'transporte',
             'fecha_inicio',

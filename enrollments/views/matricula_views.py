@@ -84,10 +84,32 @@ class RegistrarMatriculaView(APIView):
         return (today.year - nacimiento.year) * 12 + today.month - nacimiento.month
 
     def get(self, request):
-        # Listar matriculas del usuario
-        user = request.user
-        caninos = Canino.objects.filter(id_dueno=user)
+        """
+        Listar matrículas:
+        - Si hay query param dueno_identificacion, filtra por ese dueño
+        - Si solo_vigentes=true, filtra por matrículas activas (estado='Activa')
+        """
+        dueno_identificacion = request.query_params.get('dueno_identificacion')
+        solo_vigentes = request.query_params.get('solo_vigentes') == 'true'
+
+        # Si se pasó un documento de dueño, buscamos a ese usuario
+        if dueno_identificacion:
+            try:
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                dueno = User.objects.get(documento=dueno_identificacion)
+            except User.DoesNotExist:
+                return Response([], status=status.HTTP_200_OK)  # Retornamos lista vacía si no existe
+            caninos = Canino.objects.filter(id_dueno=dueno)
+        else:
+            # Si no hay documento, devolvemos las mascotas del usuario autenticado
+            caninos = Canino.objects.filter(id_dueno=request.user)
+
         matriculas = Matricula.objects.filter(id_canino__in=caninos)
+
+        if solo_vigentes:
+            matriculas = matriculas.filter(estado='Activa')
+
         serializer = MatriculaSerializer(matriculas, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
