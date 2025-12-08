@@ -164,7 +164,7 @@ AXES_LOCKOUT_CALLABLE = None  # Usa el comportamiento por defecto
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Bogota'
 
 USE_I18N = True
 
