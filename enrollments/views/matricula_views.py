@@ -1,4 +1,5 @@
 # enrollments/views/matricula_views.py
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -89,3 +90,26 @@ class RegistrarMatriculaView(APIView):
         matriculas = Matricula.objects.filter(id_canino__in=caninos)
         serializer = MatriculaSerializer(matriculas, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def delete(self, request, pk=None):
+        """
+        Elimina una matrícula (y opcionalmente el canino asociado)
+        """
+        user = request.user
+        matricula = get_object_or_404(Matricula, id_matricula=pk, id_canino__id_dueno=user)
+
+        canino = matricula.id_canino
+        matricula.delete()  # Esto elimina solo la matrícula
+        # canino.delete()   # Descomenta si quieres eliminar también el canino
+
+        # Intentamos eliminar el archivo en Supabase, pero no afectamos la respuesta
+        try:
+            from supabase import create_client
+            supabase = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_ANON_KEY'))
+            if canino.carnet_vacunacion_url:
+                file_name = canino.carnet_vacunacion_url.split('/')[-1]
+                supabase.storage.from_('carnet_vacunacion').remove([file_name])
+        except Exception as e:
+            print('Error eliminando archivo en Supabase:', e)
+
+        return Response({'mensaje': 'Matrícula eliminada correctamente.'}, status=status.HTTP_200_OK)
