@@ -14,27 +14,60 @@ class RegistrarAsistenciaView(APIView):
 
     def post(self, request):
         data = request.data
-        user = request.user  # <-- Usuario autenticado
+        user = request.user
 
         try:
             canino_id = data.get('id_canino')
             tipo_llegada = data.get('tipo_llegada')
             fecha = data.get('fecha')
+
+            # Si no envían fecha → usar HOY
             if not fecha:
                 fecha = timezone.localdate()
 
             if not canino_id or not tipo_llegada:
                 return Response({'error': 'Faltan datos'}, status=status.HTTP_400_BAD_REQUEST)
 
+            # -----------------------------------------------------------------------
+            # 🔍 1️⃣ VALIDAR: ¿Ya existe una asistencia hoy para este canino?
+            # -----------------------------------------------------------------------
+            asistencia_hoy = Asistencia.objects.filter(
+                id_canino_id=canino_id,
+                fecha=fecha
+            ).first()
+
+            if asistencia_hoy:
+                return Response(
+                    {"error": "Este canino ya tiene una asistencia registrada para este día."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # -----------------------------------------------------------------------
+            # 🔍 2️⃣ VALIDAR: ¿Tiene una asistencia activa (sin salida)?
+            # -----------------------------------------------------------------------
+            asistencia_activa = Asistencia.objects.filter(
+                id_canino_id=canino_id,
+                salida__isnull=True
+            ).first()
+
+            if asistencia_activa:
+                return Response(
+                    {"error": "Este canino ya se encuentra en la escuela actualmente."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # -----------------------------------------------------------------------
+            # 3️⃣ Crear asistencia normalmente
+            # -----------------------------------------------------------------------
             canino = Canino.objects.get(id_canino=canino_id)
 
             asistencia = Asistencia.objects.create(
                 id_canino=canino,
                 tipo_llegada=tipo_llegada,
                 fecha=fecha,
-                registrado_por_id=request.user.id_usuario  # <-- Aquí guardamos quién registró
+                registrado_por_id=request.user.id_usuario
             )
-            print("Fecha que se enviará a Supabase:", fecha)
+
             return Response({
                 'mensaje': 'Asistencia registrada correctamente',
                 'asistencia_id': asistencia.id_asistencia
@@ -42,8 +75,10 @@ class RegistrarAsistenciaView(APIView):
 
         except Canino.DoesNotExist:
             return Response({'error': 'Canino no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
         
 
 class ListarAsistenciasView(APIView):
@@ -107,11 +142,10 @@ class RegistrarSalidaView(APIView):
             if not asistencia_id or not quien_retiro:
                 return Response({"error": "Faltan datos requeridos"}, status=400)
 
-
             asistencia = Asistencia.objects.get(id_asistencia=asistencia_id)
 
             # -------------------------------------------------------------
-            # 1️⃣  Registrar salida normalmente
+            # 1️⃣ Registrar salida
             # -------------------------------------------------------------
             asistencia.salida = timezone.localtime().time()
             asistencia.motivo_salida = motivo_salida or ""
@@ -122,35 +156,66 @@ class RegistrarSalidaView(APIView):
             user = request.user
 
             # -------------------------------------------------------------
-            # 2️⃣  SI NO ES SALIDA ANTICIPADA → REGISTRAR APRENDIZAJE Y SALUD
+            # 2️⃣ REGISTRAR APRENDIZAJE Y CONDICIÓN FÍSICA
             # -------------------------------------------------------------
             if not salida_anticipada:
-                # Datos de aprendizaje
-                Aprendizaje.objects.create(
+
+                hoy = timezone.localdate()
+                mes = hoy.month
+                anio = hoy.year
+
+                # ---------------------------------------------------------
+                # APRENDIZAJE (mensual)
+                # Si ya existe registro del mes → actualizar
+                # ---------------------------------------------------------
+                aprendizaje, created = Aprendizaje.objects.get_or_create(
                     id_canino=canino,
-                    mes=timezone.localdate().month,
-                    anio=timezone.localdate().year,
-                    obediencia=request.data.get("obediencia"),
-                    sociabilidad=request.data.get("sociabilidad"),
-                    conciencia=request.data.get("conciencia"),
-                    actividad=request.data.get("actividad"),
-                    estado_animo=request.data.get("animo"),
-                    registrado_por=user
+                    mes=mes,
+                    anio=anio,
+                    defaults={
+                        "obediencia": request.data.get("obediencia"),
+                        "sociabilidad": request.data.get("sociabilidad"),
+                        "conciencia": request.data.get("conciencia"),
+                        "actividad": request.data.get("actividad"),
+                        "estado_animo": request.data.get("animo"),
+                        "registrado_por": user,
+                    }
                 )
 
-                # Datos de condición física
-                CondicionFisica.objects.create(
+                if not created:
+                    # Ya existía → actualizar valores
+                    aprendizaje.obediencia = request.data.get("obediencia")
+                    aprendizaje.sociabilidad = request.data.get("sociabilidad")
+                    aprendizaje.conciencia = request.data.get("conciencia")
+                    aprendizaje.actividad = request.data.get("actividad")
+                    aprendizaje.estado_animo = request.data.get("animo")
+                    aprendizaje.save()
+
+                # ---------------------------------------------------------
+                # CONDICIÓN FÍSICA (diaria)
+                # Si ya existe registro del día → actualizar
+                # ---------------------------------------------------------
+                condicion, created = CondicionFisica.objects.get_or_create(
                     id_canino=canino,
-                    fecha=timezone.localdate(),
-                    peso=request.data.get("peso"),
-                    pelaje_piel=request.data.get("pelaje_piel"),
-                    color_mucosas=request.data.get("mucosas"),
-                    observaciones=request.data.get("abdomen", ""),
-                    registrado_por=user
+                    fecha=hoy,
+                    defaults={
+                        "peso": request.data.get("peso"),
+                        "pelaje_piel": request.data.get("pelaje_piel"),
+                        "color_mucosas": request.data.get("mucosas"),
+                        "observaciones": request.data.get("abdomen", ""),
+                        "registrado_por": user,
+                    }
                 )
+
+                if not created:
+                    condicion.peso = request.data.get("peso")
+                    condicion.pelaje_piel = request.data.get("pelaje_piel")
+                    condicion.color_mucosas = request.data.get("mucosas")
+                    condicion.observaciones = request.data.get("abdomen", "")
+                    condicion.save()
 
             # -------------------------------------------------------------
-            # 3️⃣ Respuesta
+            # 3️⃣ Respuesta final
             # -------------------------------------------------------------
             return Response({
                 "mensaje": "Salida registrada correctamente",
@@ -161,9 +226,11 @@ class RegistrarSalidaView(APIView):
 
         except Asistencia.DoesNotExist:
             return Response({"error": "Asistencia no encontrada"}, status=404)
+
         except Exception as e:
             print("❌ Error registrar salida:", e)
             return Response({"error": str(e)}, status=400)
+
 
 
 class EliminarAsistenciaView(APIView):
