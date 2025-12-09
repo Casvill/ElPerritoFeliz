@@ -69,7 +69,8 @@ class ListarAsistenciasView(APIView):
             # 🔹 Filtrado opcional: solo presentes
             solo_presentes = request.query_params.get('solo_presentes')
             if solo_presentes and solo_presentes.lower() == 'true':
-                asistencias = asistencias.filter(tipo_llegada__isnull=False)
+                asistencias = asistencias.filter(salida__isnull=True)
+
 
             # 🔹 DEBUG: imprime qué asistencias encontró
             print("Asistencias del usuario logueado:", list(asistencias.values('id_canino__nombre','fecha','tipo_llegada')))
@@ -99,13 +100,13 @@ class RegistrarSalidaView(APIView):
     def post(self, request):
         try:
             asistencia_id = request.data.get("id_asistencia")
-            quien_retiro = request.data.get("tipo_salida")
             motivo_salida = request.data.get("motivo_salida", "")
             quien_retiro = request.data.get("quien_retiro", "")
             salida_anticipada = request.data.get("salida_anticipada", False)
 
             if not asistencia_id or not quien_retiro:
                 return Response({"error": "Faltan datos requeridos"}, status=400)
+
 
             asistencia = Asistencia.objects.get(id_asistencia=asistencia_id)
 
