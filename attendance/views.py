@@ -164,3 +164,35 @@ class RegistrarSalidaView(APIView):
         except Exception as e:
             print("❌ Error registrar salida:", e)
             return Response({"error": str(e)}, status=400)
+
+
+class EliminarAsistenciaView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, id_asistencia):
+        try:
+            asistencia = Asistencia.objects.get(id_asistencia=id_asistencia)
+
+            # Si quieres validar que sólo el que creó la asistencia pueda borrarla:
+            if asistencia.registrado_por_id != request.user.id_usuario:
+                return Response(
+                    {"error": "No tienes permiso para borrar esta asistencia."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            asistencia.delete()
+
+            return Response(
+                {"mensaje": "Asistencia eliminada correctamente."},
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+        except Asistencia.DoesNotExist:
+            return Response(
+                {"error": "Asistencia no encontrada."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            print("❌ Error al eliminar asistencia:", e)
+            return Response({"error": str(e)}, status=400)
