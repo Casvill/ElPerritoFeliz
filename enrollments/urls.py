@@ -6,7 +6,10 @@ from .views.matricula_views import RegistrarMatriculaView, ListadoGlobalMatricul
 urlpatterns = [
     path('matriculas/', RegistrarMatriculaView.as_view()),          # GET y POST
     path('matriculas/<int:pk>/', RegistrarMatriculaView.as_view()), # PUT y DELETE
-    path('matriculas/listado-global/', ListadoGlobalMatriculasView.as_view()), 
     path('matriculas/<int:pk>/', RegistrarMatriculaView.as_view(), name='matricula-update'),
+
+    # Listado global (admin / reportes)
+    path('matriculas/listado-global/', ListadoGlobalMatriculasView.as_view(), name='matriculas-global'),
+    path('matriculas/listado-global/<int:pk>/', ListadoGlobalMatriculasView.as_view(), name='matricula-global-update'),
 
 ]

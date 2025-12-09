@@ -203,3 +203,44 @@ class ListadoGlobalMatriculasView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=400)
+
+    def put(self, request, pk):
+        try:
+            matricula = get_object_or_404(Matricula, id_matricula=pk)
+            canino = matricula.id_canino
+
+            data = request.data
+
+            # Actualizar canino
+            canino.nombre = data.get('nombre', canino.nombre)
+            canino.raza = data.get('raza', canino.raza)
+            canino.tamano = data.get('talla', canino.tamano)
+            canino.fecha_nacimiento = data.get('fecha_nacimiento', canino.fecha_nacimiento)
+            canino.carnet_vacunacion_url = data.get('vacunas_url', canino.carnet_vacunacion_url)
+            canino.save()
+
+            # Actualizar matrícula
+            matricula.plan = data.get('plan', matricula.plan)
+            matricula.transporte = data.get('transporte', matricula.transporte)
+            matricula.fecha_inicio = data.get('fecha_inicio', matricula.fecha_inicio)
+            matricula.fecha_fin = data.get('fecha_fin', matricula.fecha_fin)
+            matricula.estado = data.get('estado', matricula.estado)
+            matricula.save()
+
+            serializer = MatriculaSerializer(matricula)
+            return Response(serializer.data, status=200)
+
+        except Exception as e:
+            return Response({"❌ Error Editando matrícula": str(e)}, status=400)
+
+        
+    def delete(self, request, pk):
+        try:
+            matricula = get_object_or_404(Matricula, id_matricula=pk)
+            matricula.delete()
+            return Response({"mensaje": "Matrícula eliminada correctamente."}, status=200)
+
+        except Exception as e:
+            print("❌ Error eliminando matrícula:", e)
+            return Response({'error': str(e)}, status=400)
+
