@@ -1,9 +1,12 @@
 # enrollments/urls.py
 
 from django.urls import path
-from .views.matricula_views import RegistrarMatriculaView
+from .views.matricula_views import RegistrarMatriculaView, ListadoGlobalMatriculasView
 
 urlpatterns = [
     path('matriculas/', RegistrarMatriculaView.as_view()),          # GET y POST
     path('matriculas/<int:pk>/', RegistrarMatriculaView.as_view()), # PUT y DELETE
+    path('matriculas/listar/', ListadoGlobalMatriculasView.as_view()), 
+    path('matriculas/<int:pk>/', RegistrarMatriculaView.as_view(), name='matricula-update'),
+
 ]

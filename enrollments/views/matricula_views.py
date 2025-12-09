@@ -135,3 +135,71 @@ class RegistrarMatriculaView(APIView):
             print('Error eliminando archivo en Supabase:', e)
 
         return Response({'mensaje': 'Matrícula eliminada correctamente.'}, status=status.HTTP_200_OK)
+
+    def put(self, request, pk=None):
+        try:
+            user = request.user
+
+            matricula = get_object_or_404(
+                Matricula, 
+                id_matricula=pk, 
+                id_canino__id_dueno=user
+            )
+
+            canino = matricula.id_canino
+
+            data = request.data
+
+            # 1️⃣ Actualizar el canino
+            canino.nombre = data.get('nombre', canino.nombre)
+            canino.raza = data.get('raza', canino.raza)
+            canino.tamano = data.get('talla', canino.tamano)
+            canino.fecha_nacimiento = data.get('fecha_nacimiento', canino.fecha_nacimiento)
+            canino.carnet_vacunacion_url = data.get('vacunas_url', canino.carnet_vacunacion_url)
+            canino.save()
+
+            # 2️⃣ Actualizar la matrícula
+            matricula.plan = data.get('plan', matricula.plan)
+            matricula.transporte = data.get('transporte', matricula.transporte)
+            matricula.save()
+
+            return Response(
+                {'mensaje': 'Matrícula y canino actualizados correctamente'},
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
+
+
+
+class ListadoGlobalMatriculasView(APIView):
+    """
+    Lista todas las matrículas sin importar el dueño,
+    con filtros opcionales por tamaño, raza y plan.
+    Este endpoint es independiente del CRUD original.
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            queryset = Matricula.objects.select_related('id_canino').all()
+
+            # 🔹 FILTROS
+            tamano = request.query_params.get('tamano')
+            raza = request.query_params.get('raza')
+            plan = request.query_params.get('plan')
+
+            if tamano:
+                queryset = queryset.filter(id_canino__tamano__iexact=tamano)
+            if raza:
+                queryset = queryset.filter(id_canino__raza__icontains=raza)
+            if plan:
+                queryset = queryset.filter(plan__iexact=plan)
+
+            serializer = MatriculaSerializer(queryset, many=True)
+            return Response(serializer.data, status=200)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
