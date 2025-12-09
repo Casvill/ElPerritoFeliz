@@ -7,9 +7,12 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from datetime import date, timedelta
 from django.db.models import Sum
+from attendance.models import Asistencia
 from enrollments.models import Matricula
 from users.models import Usuario
 from canines.models import Canino
+from django.db.models import Count
+
 
 
 # ----------------------------------------------
@@ -41,8 +44,32 @@ class AdminDashboardView(APIView):
             or 0
         )
 
-        # === KPI 4: Asistencia promedio (simulado) ===
-        asistencia_pct = 85
+        # === KPI 4: Asistencia promedio REAL ===
+        # 1) Cantidad de perros matriculados activos
+        matriculados_activos = Matricula.objects.filter(
+            fecha_inicio__lte=mes_fin,
+            fecha_fin__gte=mes_inicio
+        ).count()
+
+        if matriculados_activos == 0:
+            asistencia_pct = 0
+        else:
+            # 2) Asistencias agrupadas por día del mes
+            asistencias_por_dia = (
+                Asistencia.objects.filter(fecha__range=[mes_inicio, mes_fin])
+                .values("fecha")
+                .annotate(total=Count("id_asistencia"))
+                .order_by("fecha")
+            )
+
+            # 3) Calcular porcentaje diario
+            porcentajes = []
+            for dia in asistencias_por_dia:
+                pct = (dia["total"] / matriculados_activos) * 100
+                porcentajes.append(pct)
+
+            # 4) Promedio mensual
+            asistencia_pct = round(sum(porcentajes) / len(porcentajes), 2) if porcentajes else 0
 
         # === Distribución de transporte ===
         transporte = Matricula.objects.filter(fecha_inicio__range=[mes_inicio, mes_fin])
