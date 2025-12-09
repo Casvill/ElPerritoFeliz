@@ -19,7 +19,7 @@ class Asistencia(models.Model):
     id_asistencia = models.BigAutoField(primary_key=True)
     id_canino = models.ForeignKey(Canino, on_delete=models.CASCADE, related_name='asistencias')
     fecha = models.DateField()
-    llegada = models.TimeField("Hora de llegada",null=True, blank=True)
+    llegada = models.TimeField(auto_now_add=True)
     salida = models.TimeField("Hora de salida", null=True, blank=True)
     motivo_salida = models.TextField("Motivo de salida", blank=True)
     quien_retiro = models.CharField("Quién retiró", max_length=200, blank=True)
