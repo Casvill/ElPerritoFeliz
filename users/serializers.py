@@ -1,9 +1,13 @@
 # ----------------------------------------------
 # users/serializers.py
 # ----------------------------------------------
+from itertools import count
 from rest_framework import serializers
 from .models import Usuario
 from django.contrib.auth import authenticate
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.response import Response
 
 # ----------------------------------------------
 # Serializer para creación y visualización de usuarios

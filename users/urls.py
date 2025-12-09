@@ -9,6 +9,7 @@ from .views.internaluser_views import UsuarioInternoViewSet
 from .views.token_views import CustomTokenObtainPairView
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views.profile_views import ClientePerfilView
+from users.views.clientes_views import ListadoGlobalClientesView
 
 
 # Router para viewsets (usuarios internos)
@@ -23,6 +24,7 @@ urlpatterns = [
     path('check-documento/', check_documento, name='check_documento'),
     path('register/', register_user, name='register_user'),
     path('perfil/', ClientePerfilView.as_view(), name='perfil_cliente'),
+    path("clientes/listado-global/", ListadoGlobalClientesView.as_view(), name="clientes-global"),
 
 
     # --- Nuevas rutas automáticas ---
