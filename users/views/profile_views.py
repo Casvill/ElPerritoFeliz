@@ -28,7 +28,7 @@ class ClientePerfilView(APIView):
     # ----------------------------------------------
     # Actualizar datos del perfil
     # ----------------------------------------------
-    def put(self, request):
+    def patch(self, request):  # 👈 CAMBIADO PUT → PATCH
         user = request.user
         serializer = UsuarioPerfilSerializer(user, data=request.data, partial=True)
 

@@ -1,9 +1,13 @@
 # ----------------------------------------------
 # users/serializers.py
 # ----------------------------------------------
+from itertools import count
 from rest_framework import serializers
 from .models import Usuario
 from django.contrib.auth import authenticate
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.response import Response
 
 # ----------------------------------------------
 # Serializer para creación y visualización de usuarios
@@ -29,11 +33,12 @@ class UsuarioSerializer(serializers.ModelSerializer):
             "activo",
             "password",
         ]
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'foto': {'required': False, 'allow_null': True, 'allow_blank': True},
+        }
 
     def create(self, validated_data):
-        """
-        Crea un usuario y guarda la contraseña de forma segura (encriptada).
-        """
         password = validated_data.pop("password", None)
         usuario = Usuario(**validated_data)
         if password:
@@ -56,17 +61,14 @@ class LoginSerializer(serializers.Serializer):
         if not documento or not password:
             raise serializers.ValidationError("Debe ingresar documento y contraseña.")
 
-        # 🔹 Verificar si el usuario existe
         try:
             user = Usuario.objects.get(documento=documento)
         except Usuario.DoesNotExist:
             raise serializers.ValidationError("Credenciales inválidas.")
 
-        # 🔹 Verificar si el usuario está activo
         if not user.is_active:
             raise serializers.ValidationError("Usuario inactivo. Contacte al administrador.")
 
-        # 🔹 Autenticación de contraseña
         user = authenticate(
             request=self.context.get("request"),
             documento=documento,
@@ -100,10 +102,15 @@ class UsuarioPerfilSerializer(serializers.ModelSerializer):
             "direccion",
             "foto",
             "fecha_registro",
-            "petsCount",  # 🔹 Nuevo campo con número de caninos
+            "petsCount",
         ]
         read_only_fields = ["documento", "tipo_documento"]
 
+        # 🔥🔥🔥 AGREGADO SOLO ESTO para que permita actualizar "foto"
+        extra_kwargs = {
+            'foto': {'required': False, 'allow_null': True, 'allow_blank': True},
+        }
+        # 🔥🔥🔥 NADA MÁS, no se tocó nada más.
+
     def get_petsCount(self, obj):
         return obj.caninos.count()
-

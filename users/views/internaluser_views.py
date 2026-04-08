@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
 from ..models import Usuario
 from ..serializers import UsuarioSerializer
+from rest_framework.decorators import action
 
 
 class UsuarioInternoViewSet(viewsets.ModelViewSet):
@@ -56,3 +57,26 @@ class UsuarioInternoViewSet(viewsets.ModelViewSet):
             },
             status=status.HTTP_201_CREATED
         )
+
+    @action(detail=True, methods=['post'], url_path='toggle-activo')
+    def toggle_activo(self, request, pk=None):
+        """
+        Cambia el estado is_active del usuario interno.
+        """
+        try:
+            usuario = self.get_queryset().get(pk=pk)
+        except Usuario.DoesNotExist:
+            return Response({'error': 'Usuario no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Solo ADMIN o DIRECTOR pueden activar/desactivar
+        if request.user.tipo_usuario not in ['ADMIN', 'DIRECTOR']:
+            return Response({'error': 'No tienes permiso para esta acción.'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        usuario.is_active = not usuario.is_active
+        usuario.activo = False
+        usuario.save()
+
+        estado = 'activo' if usuario.is_active else 'inactivo'
+        return Response({'mensaje': f'Usuario {estado} correctamente.', 'is_active': usuario.is_active},
+                        status=status.HTTP_200_OK)
